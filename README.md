@@ -98,6 +98,18 @@ helm uninstall backstage -n backstage
 
 ## Error
 
+The backend's pod cannot start successfully as it reports the following error
+```bash
+(node:1) [DEP0148] DeprecationWarning: Use of deprecated folder mapping "./" in the "exports" field module resolution of the package at /app/node_modules/yaml/package.json.
+Update this package.json to use a subpath pattern like "./*".
+(Use `node --trace-deprecation ...` to show where the warning was created)
+2022-06-17T11:18:54.432Z backstage info Loaded config from app-config.yaml, app-config.development.yaml, env
+2022-06-17T11:18:54.445Z backstage info 1 secrets found in the config which will be redacted
+2022-06-17T11:18:54.464Z backstage info Created UrlReader predicateMux{readers=azure{host=dev.azure.com,authed=false},bitbucketCloud{host=bitbucket.org,authed=false},github{host
+=github.com,authed=true},gitlab{host=gitlab.com,authed=false},awsS3{host=amazonaws.com,authed=false},fetch{}
+Backend failed to start up, Error: Failed to connect to the database to make sure that 'backstage_plugin_catalog' exists, Error: getaddrinfo ENOTFOUND dummy
+```
+
 ## To be checked
 
 ```
