@@ -43,8 +43,6 @@ helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstag
 
 We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
 ```bash
-
-
 DOMAIN_NAME="192.168.1.90.nip.io"
 cat <<EOF > $HOME/code/backstage/demo-backstage/my-values.yml
 backstage:
