@@ -1,1 +1,5 @@
 /.idea/
+commands.txt
+*.yaml
+*.yml
+/backstage/
