@@ -44,7 +44,7 @@ helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstag
 We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
 ```bash
 DOMAIN_NAME="192.168.1.90.nip.io"
-cat <<EOF > $HOME/code/backstage/demo-backstage/app-config.extra.yaml
+cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
   title: Backstage
@@ -68,8 +68,9 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.    
 EOF
 
-cat <<EOF > $HOME/code/backstage/demo-backstage/my-values.yml
+cat <<EOF > $HOME/code/backstage/my-values.yml
 ingress:
+  enabled: true
   host: backstage.$DOMAIN_NAME
 backstage:
   image:
@@ -78,14 +79,13 @@ backstage:
     tag: "dev"
   extraAppConfig:
     - filename: app-config.extra.yaml
-      configMapRef: my-app-config
-techdocs:       
+      configMapRef: my-app-config      
 EOF
 ```
 We can deploy it
 ```bash
-helm install -f $HOME/code/backstage/demo-backstage/my-values.yml --create-namespace -n backstage my-backstage ./backstage
-kubectl delete configmap my-app-config -n backstage && kubectl create configmap my-app-config -n backstage --from-file=app-config.extra.yaml=$HOME/code/backstage/demo-backstage/app-config.extra.yaml
+helm install -f $HOME/code/backstage/my-values.yml --create-namespace -n backstage my-backstage ./backstage
+kubectl delete configmap my-app-config -n backstage && kubectl create configmap my-app-config -n backstage --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
 ```
 To uninstall the chart
 ```bash
