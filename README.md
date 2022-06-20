@@ -30,13 +30,42 @@ cd my-backstage && yarn dev
 
 Next, build it like the backend image and upload it within your local registry (or kind cluster)
 ```bash
-#yarn add --cwd packages/app graphql-ws
+yarn add --cwd packages/backend better-sqlite3
 yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
 
-When the image has been uploaded we can create the YAML values file used by the Helm chart to install backstage on a k8s cluster
+When the image has been uploaded, pull the chart locally to add the missing resources such as: ingress, etc
+```bash
+helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.1.2/backstage-0.1.2.tgz --untar --untardir ./
+```
+
+We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
+```bash
+
+
+DOMAIN_NAME="192.168.1.90.nip.io"
+cat <<EOF > $HOME/code/backstage/demo-backstage/my-values.yml
+backstage:
+  image:
+    registry: "docker.io/library"
+    repository: "backstage"
+    tag: "dev"
+EOF
+```
+We can deploy it
+```bash
+helm install -f $HOME/code/backstage/demo-backstage/my-values.yml --create-namespace -n backstage my-backstage ./backstage
+```
+To uninstall the chart
+```bash
+helm uninstall my-backstage -n backstage
+```
+
+## Deprecated
+
+Instructions using the backstage contrib helm chart
 
 ```bash
 git clone https://github.com/backstage/backstage.git
@@ -91,12 +120,6 @@ EOF
 
 helm install --create-namespace -f $HOME/code/backstage/my-values.yml -n backstage backstage .
 ```
-To uninstall the chart
-```bash
-helm uninstall backstage -n backstage
-```
-
-## Error
 
 The backend's pod cannot start successfully as it reports the following error
 ```bash
@@ -108,6 +131,10 @@ Update this package.json to use a subpath pattern like "./*".
 2022-06-17T11:18:54.464Z backstage info Created UrlReader predicateMux{readers=azure{host=dev.azure.com,authed=false},bitbucketCloud{host=bitbucket.org,authed=false},github{host
 =github.com,authed=true},gitlab{host=gitlab.com,authed=false},awsS3{host=amazonaws.com,authed=false},fetch{}
 Backend failed to start up, Error: Failed to connect to the database to make sure that 'backstage_plugin_catalog' exists, Error: getaddrinfo ENOTFOUND dummy
+```
+To uninstall the chart
+```bash
+helm uninstall backstage -n backstage
 ```
 
 ## To be checked
