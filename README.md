@@ -36,9 +36,14 @@ yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
 
-When the image has been uploaded, pull the chart locally to add the missing resources such as: ingress, etc
+When the image has been uploaded, install the backstage repository:
 ```bash
-helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.1.2/backstage-0.1.2.tgz --untar --untardir ./
+helm repo add backstage https://vinzscam.github.io/backstage-chart
+```
+
+If the resources of the chart must be changed locally, then pull/untar the project:
+```bash
+helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
 ```
 
 We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
@@ -65,7 +70,7 @@ techdocs:
   generator:
     runIn: 'docker' # Alternatives - 'local'
   publisher:
-    type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.    
+    type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 EOF
 
 cat <<EOF > $HOME/code/backstage/my-values.yml
