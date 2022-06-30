@@ -27,8 +27,9 @@ When the `yarn build` is over, move to the folder of the created project and tes
 ```bash
 cd my-backstage && yarn dev
 ```
+**Note**: Set this property if a more recent version of node is installed `yarn config set ignore-engines true`
 
-Next, build it like the backend image and upload it within your local registry (or kind cluster)
+Next, build the image and upload it within your local registry (or kind cluster)
 ```bash
 yarn add --cwd packages/backend better-sqlite3
 yarn build
@@ -41,14 +42,14 @@ When the image has been uploaded, install the backstage repository:
 helm repo add backstage https://vinzscam.github.io/backstage-chart
 ```
 
-If the resources of the chart must be changed locally, then pull/untar the project:
+**Note**: If the resources of the chart must be changed locally, then pull/untar the project:
 ```bash
 helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
 ```
 
 We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
 ```bash
-DOMAIN_NAME="192.168.1.90.nip.io"
+DOMAIN_NAME="<VM_IP>.nip.io"
 cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
@@ -56,10 +57,11 @@ app:
 backend:
   baseUrl: http://backstage.$DOMAIN_NAME
   cors:
-    origin: http://backstage.$DOMAIN_NAME
-
-  # This is for local development only, it is not recommended to use this in production
-  # The production database configuration is stored in app-config.production.yaml
+    origin: backstage.$DOMAIN_NAME
+    methods: [GET, POST, PUT, DELETE]
+    credentials: true      
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
   database:
     client: better-sqlite3
     connection: ':memory:'
