@@ -3,3 +3,4 @@ commands.txt
 *.yaml
 *.yml
 /backstage/
+/my-backstage
