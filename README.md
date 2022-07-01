@@ -96,6 +96,12 @@ kubectl create configmap my-app-config -n backstage \
   
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
+Grab the URL of backstage and access it from your browser
+```bash
+BACKSTAGE_URL=$(kubectl get ingress/my-backstage -n backstage -o json | jq -r '.spec.rules[0].host')
+echo "http://${BACKSTAGE_URL}"
+```
+
 To uninstall the chart
 ```bash
 helm uninstall my-backstage -n backstage
