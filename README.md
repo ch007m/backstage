@@ -36,20 +36,11 @@ yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
-
-When the image has been uploaded, install the backstage repository:
-```bash
-helm repo add backstage https://vinzscam.github.io/backstage-chart
-```
-
-**Note**: If the resources of the chart must be changed locally, then pull/untar the project:
-```bash
-helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
-```
+**Note**: For the rancher desktop users, use the `nerdctl tool` and this command: `nerdctl build -f Dockerfile -t backstage:dev ../..` instead of `yarn build-image -t backstage:dev`
 
 We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
 ```bash
-DOMAIN_NAME="<VM_IP>.nip.io"
+DOMAIN_NAME="<VM_IP>.sslip.io"
 cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
@@ -57,7 +48,7 @@ app:
 backend:
   baseUrl: http://backstage.$DOMAIN_NAME
   cors:
-    origin: backstage.$DOMAIN_NAME
+    origin: http://backstage.$DOMAIN_NAME
     methods: [GET, POST, PUT, DELETE]
     credentials: true      
   csp:
@@ -79,6 +70,7 @@ cat <<EOF > $HOME/code/backstage/my-values.yml
 ingress:
   enabled: true
   host: backstage.$DOMAIN_NAME
+  className: nginx
 backstage:
   image:
     registry: "docker.io/library"
@@ -89,14 +81,28 @@ backstage:
       configMapRef: my-app-config      
 EOF
 ```
-We can deploy it
+and deploy it
 ```bash
-helm install -f $HOME/code/backstage/my-values.yml --create-namespace -n backstage my-backstage ./backstage
-kubectl delete configmap my-app-config -n backstage && kubectl create configmap my-app-config -n backstage --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
+helm upgrade --install \
+  my-backstage \
+  backstage \
+  --repo https://vinzscam.github.io/backstage-chart \
+  -f $HOME/code/backstage/my-values.yml \
+  --create-namespace \
+  -n backstage
+  
+kubectl create configmap my-app-config -n backstage \
+  --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
+  
+kubectl rollout restart deployment/my-backstage -n backstage
 ```
 To uninstall the chart
 ```bash
 helm uninstall my-backstage -n backstage
+```
+**Note**: If the resources of the chart must be changed locally, then pull/untar the project:
+```bash
+helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
 ```
 
 ## Deprecated
@@ -108,7 +114,7 @@ git clone https://github.com/backstage/backstage.git
 cd contrib/chart/backstage
 helm dependency update
 
-DOMAIN_NAME="192.168.1.90.nip.io"
+DOMAIN_NAME="<VM_IP>.sslip.io"
 cat <<EOF > $HOME/code/backstage/my-values.yml
 backend:
   image:
