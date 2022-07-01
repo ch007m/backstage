@@ -102,6 +102,8 @@ BACKSTAGE_URL=$(kubectl get ingress/my-backstage -n backstage -o json | jq -r '.
 echo "http://${BACKSTAGE_URL}"
 ```
 
+## Cleanup
+
 To uninstall the chart
 ```bash
 helm uninstall my-backstage -n backstage
