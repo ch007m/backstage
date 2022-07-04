@@ -1,5 +1,14 @@
 # Backstage
 
+Table of Contents
+=================
+
+ * [Prerequisites](#prerequisites)
+ * [Instructions](#instructions)
+ * [Plugins](#plugins)
+     * [K8s](#k8s)
+ * [Cleanup](#cleanup)
+
 ## Prerequisites
 
 - Node (>= 16), npm and npx installed
@@ -103,18 +112,6 @@ catalog:
   locations:
   - type: url
     target: https://github.com/mclarke47/dice-roller/blob/master/catalog-info.yaml    
-kubernetes:
-  serviceLocatorMethod:
-    type: 'multiTenant'
-  clusterLocatorMethods:
-  - type: 'config'
-    clusters:
-      - url: https://kubernetes.default.svc
-        name: kind
-        authProvider: 'serviceAccount'
-        skipTLSVerify: true
-        skipMetricsLookup: true
-        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}     
 EOF
 ```
 Create the configMap containing our extra parameters and rollout the backstage app to reload its config
@@ -128,6 +125,41 @@ Grab the URL of backstage and access it from your browser
 ```bash
 BACKSTAGE_URL=$(kubectl get ingress/my-backstage -n backstage -o json | jq -r '.spec.rules[0].host')
 echo "http://${BACKSTAGE_URL}"
+```
+
+## Plugins
+
+### K8s
+
+To use the backstage kubernetes plugin, it is needed to install 2 packages
+
+and to set up the `App` and `Backend` packages as described here: https://backstage.io/docs/features/kubernetes/installation
+
+Next, the existing ConfigMap must be extended to include the kubernetes config
+
+```bash
+BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
+cat <<EOF >> $HOME/code/backstage/app-config.extra.yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+  - type: 'config'
+    clusters:
+      - url: https://kubernetes.default.svc
+        name: kind
+        authProvider: 'serviceAccount'
+        skipTLSVerify: true
+        skipMetricsLookup: true
+        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
+EOF
+
+kubectl create configmap my-app-config -n backstage \
+  --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml \
+  -o yaml \
+  --dry-run | kubectl apply -n backstage -f - 
+  
+kubectl rollout restart deployment/my-backstage -n backstage
 ```
 
 ## Cleanup
