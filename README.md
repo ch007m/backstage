@@ -131,7 +131,12 @@ echo "http://${BACKSTAGE_URL}"
 
 ### K8s
 
-To use the backstage kubernetes plugin, it is needed to install 2 packages
+To use the backstage kubernetes plugin, it is needed to install 2 packages:
+```bash
+# From your Backstage root directory
+yarn add --cwd packages/app @backstage/plugin-kubernetes
+yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
+```
 
 and to set up the `App` and `Backend` packages as described here: https://backstage.io/docs/features/kubernetes/installation
 
