@@ -166,7 +166,7 @@ kubectl create configmap my-app-config -n backstage \
   
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
-Open the url of the `dice-roller` service - https://backstage.<VM_IP>.sslip.io/catalog/default/component/dice-roller/kubernetes and click on the `kubernetes` tab, and you will see
+Open the url of the `dice-roller` service (e.g. https://backstage.VM_IP.sslip.io/catalog/default/component/dice-roller/kubernetes) and click on the `kubernetes` tab, and you will see
 
 ![](/Users/cmoullia/code/backstage/demo-backstage/k8s-plugin.png)
 
