@@ -6,7 +6,7 @@ Table of Contents
  * [Prerequisites](#prerequisites)
  * [Instructions](#instructions)
  * [Plugins](#plugins)
-     * [K8s](#k8s)
+     * [k8s](#k8s)
  * [Cleanup](#cleanup)
 
 ## Prerequisites
@@ -129,7 +129,7 @@ echo "http://${BACKSTAGE_URL}"
 
 ## Plugins
 
-### K8s
+### k8s
 
 To use the backstage kubernetes plugin, it is needed to install 2 packages:
 ```bash
@@ -138,7 +138,7 @@ yarn add --cwd packages/app @backstage/plugin-kubernetes
 yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
 ```
 
-and to set up the `App` and `Backend` packages as described here: https://backstage.io/docs/features/kubernetes/installation
+and to set up the `Index` and `Backend` packages as described here: https://backstage.io/docs/features/kubernetes/installation
 
 Next, the existing ConfigMap must be extended to include the kubernetes config
 
@@ -166,6 +166,9 @@ kubectl create configmap my-app-config -n backstage \
   
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
+Open the url of the `dice-roller` service - https://backstage.<VM_IP>.sslip.io/catalog/default/component/dice-roller/kubernetes and click on the `kubernetes` tab, and you will see
+
+![](/Users/cmoullia/code/backstage/demo-backstage/k8s-plugin.png)
 
 ## Cleanup
 
