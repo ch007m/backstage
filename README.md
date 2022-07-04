@@ -38,9 +38,44 @@ kind load docker-image backstage:dev
 ```
 **Note**: For the rancher desktop users, use the `nerdctl tool` and this command: `nerdctl build -f Dockerfile -t backstage:dev ../..` instead of `yarn build-image -t backstage:dev`
 
-We can now create the YAML values file used by the Helm chart to install backstage on a k8s cluster
+We can now create the YAML values file needed by the Helm chart to expose the ingress route, get the extra config from a configMap and 
+use the image built
+```bash
+cat <<EOF > $HOME/code/backstage/my-values.yml
+ingress:
+  enabled: true
+  host: backstage.$DOMAIN_NAME
+  className: nginx
+backstage:
+  image:
+    registry: "docker.io/library"
+    repository: "backstage"
+    tag: "dev"
+  extraAppConfig:
+    - filename: app-config.extra.yaml
+      configMapRef: my-app-config         
+EOF
+```
+and deploy it
+```bash
+helm upgrade --install \
+  my-backstage \
+  backstage \
+  --repo https://vinzscam.github.io/backstage-chart \
+  -f $HOME/code/backstage/my-values.yml \
+  --create-namespace \
+  -n backstage
+```
+
+As we need some additional k8s resources deployed (backstage serviceaccount having the RBAC cluster admin role, the dice-roller example, ...) we will then deploy them:
+```bash
+kubectl apply -f dice-manifests.yml
+kubectl apply -f backstage-rbac.yml
+```
+We can now create our `app-config.extra.yaml` config file:
 ```bash
 DOMAIN_NAME="<VM_IP>.sslip.io"
+BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
 cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
@@ -64,33 +99,26 @@ techdocs:
     runIn: 'docker' # Alternatives - 'local'
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
-EOF
-
-cat <<EOF > $HOME/code/backstage/my-values.yml
-ingress:
-  enabled: true
-  host: backstage.$DOMAIN_NAME
-  className: nginx
-backstage:
-  image:
-    registry: "docker.io/library"
-    repository: "backstage"
-    tag: "dev"
-  extraAppConfig:
-    - filename: app-config.extra.yaml
-      configMapRef: my-app-config      
+catalog:
+  locations:
+  - type: url
+    target: https://github.com/mclarke47/dice-roller/blob/master/catalog-info.yaml    
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+  - type: 'config'
+    clusters:
+      - url: https://kubernetes.default.svc
+        name: kind
+        authProvider: 'serviceAccount'
+        skipTLSVerify: true
+        skipMetricsLookup: true
+        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}     
 EOF
 ```
-and deploy it
+Create the configMap containing our extra parameters and rollout the backstage app to reload its config
 ```bash
-helm upgrade --install \
-  my-backstage \
-  backstage \
-  --repo https://vinzscam.github.io/backstage-chart \
-  -f $HOME/code/backstage/my-values.yml \
-  --create-namespace \
-  -n backstage
-  
 kubectl create configmap my-app-config -n backstage \
   --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
   
