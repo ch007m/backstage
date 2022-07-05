@@ -67,6 +67,7 @@ kind load docker-image backstage:dev
 We can now create the YAML values file needed by the Helm chart to expose the ingress route, get the extra config from a configMap and 
 use the image built
 ```bash
+DOMAIN_NAME="<VM_IP>.sslip.io"
 cat <<EOF > $HOME/code/backstage/my-values.yml
 ingress:
   enabled: true
@@ -112,7 +113,7 @@ backend:
     methods: [GET, POST, PUT, DELETE]
     credentials: true      
   csp:
-    connect-src: ["'self'", 'http:', 'https:']
+    connect-src: ['self', 'http:', 'https:']
   database:
     client: better-sqlite3
     connection: ':memory:'
