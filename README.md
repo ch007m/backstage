@@ -62,7 +62,7 @@ yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
-**Note**: For the rancher desktop users, use the `nerdctl tool` and this command: `nerdctl build -f Dockerfile -t backstage:dev ../..` instead of `yarn build-image -t backstage:dev`
+**Note**: For the rancher desktop users, use the `nerdctl tool` and this command: `nerdctl build --namespace k8s.io -f packages/backend/Dockerfile -t backstage:dev .` instead of `yarn build-image -t backstage:dev`
 
 We can now create the YAML values file needed by the Helm chart to expose the ingress route, get the extra config from a configMap and 
 use the image built
