@@ -179,8 +179,8 @@ EOF
 kubectl create configmap my-app-config -n backstage \
   --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml \
   -o yaml \
-  --dry-run | kubectl apply -n backstage -f - 
-  
+  --dry-run=client | kubectl apply -n backstage -f -
+
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
 Open the url of the `dice-roller` service (e.g. https://backstage.VM_IP.sslip.io/catalog/default/component/dice-roller/kubernetes) and click on the `kubernetes` tab, and you will see
