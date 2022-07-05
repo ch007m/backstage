@@ -113,7 +113,7 @@ backend:
     methods: [GET, POST, PUT, DELETE]
     credentials: true      
   csp:
-    connect-src: ['self', 'http:', 'https:']
+    connect-src: ['self','http:','https:']
   database:
     client: better-sqlite3
     connection: ':memory:'
