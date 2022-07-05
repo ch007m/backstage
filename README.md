@@ -10,6 +10,7 @@ Table of Contents
 * [Plugins](#plugins)
    * [k8s](#k8s)
 * [Cleanup](#cleanup)
+* [Rancher desktop](#rancher-desktop)
 
 ## Prerequisites
 
@@ -62,7 +63,6 @@ yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
-**Note**: For the rancher desktop users, use the `nerdctl tool` and this command: `nerdctl build --namespace k8s.io -f packages/backend/Dockerfile -t backstage:dev .` instead of `yarn build-image -t backstage:dev`
 
 We can now create the YAML values file needed by the Helm chart to expose the ingress route, get the extra config from a configMap and 
 use the image built
@@ -196,3 +196,16 @@ helm uninstall my-backstage -n backstage
 ```bash
 helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
 ```
+## Rancher desktop
+
+If you plan to use `rancher-desktop`, then I recommend to disable `traefix` and to install the `ingress nginx` controller
+```shell
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress --create-namespace \
+  --set controller.service.type=NodePort \
+  --set controller.hostPort.enabled=true
+```
+
+The command to be used to build the backstage image is `nerdctl build --namespace k8s.io -f packages/backend/Dockerfile -t backstage:dev .` 
+instead of `yarn build-image -t backstage:dev`
