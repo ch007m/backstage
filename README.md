@@ -94,12 +94,7 @@ helm upgrade --install \
   -n backstage
 ```
 
-As we need some additional k8s resources deployed (backstage serviceaccount having the RBAC cluster admin role, the dice-roller example, ...) we will then deploy them:
-```bash
-kubectl apply -f dice-manifests.yml
-kubectl apply -f backstage-rbac.yml
-```
-We can now create our `app-config.extra.yaml` config file:
+We can now create our `app-config.extra.yaml` backstage config file:
 ```bash
 DOMAIN_NAME="<VM_IP>.sslip.io"
 cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
@@ -159,6 +154,12 @@ yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
 ```
 
 and to set up the `Index` and `Backend` packages as described here: https://backstage.io/docs/features/kubernetes/installation
+
+As we need some additional k8s resources deployed (backstage serviceaccount having the RBAC cluster admin role, the dice-roller example, ...) we will then deploy them:
+```bash
+kubectl apply -f dice-manifests.yml
+kubectl apply -f backstage-rbac.yml
+```
 
 Next, the existing ConfigMap must be extended to include the kubernetes config
 
