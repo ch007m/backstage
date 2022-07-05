@@ -131,7 +131,10 @@ catalog:
     target: https://github.com/mclarke47/dice-roller/blob/master/catalog-info.yaml    
 EOF
 ```
-Create the configMap containing our extra parameters and rollout the backstage app to reload its config
+
+**Note**: If you use the [my-backstage](https://github.com/halkyonio/my-backstage.git) github project, then configure too as described hereafter the `kubernetes` plugin ! 
+
+Create the `configMap` containing our extra parameters and rollout the backstage app to reload its config
 ```bash
 kubectl create configmap my-app-config -n backstage \
   --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
