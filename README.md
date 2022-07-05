@@ -3,11 +3,13 @@
 Table of Contents
 =================
 
- * [Prerequisites](#prerequisites)
- * [Instructions](#instructions)
- * [Plugins](#plugins)
-     * [k8s](#k8s)
- * [Cleanup](#cleanup)
+* [Prerequisites](#prerequisites)
+* [Instructions](#instructions)
+   * [New project](#new-project)
+   * [Build and upload the container image](#build-and-upload-the-container-image)
+* [Plugins](#plugins)
+   * [k8s](#k8s)
+* [Cleanup](#cleanup)
 
 ## Prerequisites
 
@@ -17,7 +19,15 @@ Table of Contents
 ## Instructions
 
 Here are the steps I followed to install backstage on a k8s cluster according to the backstage documentation
-and feedback that I got from the backstage engineers
+and feedback that I got from the backstage engineers. 
+
+You can use an already created project available on [github](https://github.com/halkyonio/my-backstage.git) and implementing the following plugins:
+- k8s: https://backstage.io/docs/features/kubernetes/overview
+- CCF: https://github.com/cloud-carbon-footprint/ccf-backstage-plugin 
+
+or create a new project as described hereafter
+
+### New project 
 
 Open a terminal and execute this command within the folder where you want to launch backstage
 ```bash
@@ -32,15 +42,22 @@ npx: installed 70 in 12.614s
   Set up the software catalog: https://backstage.io/docs/features/software-catalog/configuration
   Add authentication: https://backstage.io/docs/auth/
 ```
-When the `yarn build` is over, move to the folder of the created project and test it locally using the URL `http://localhost:3000/`
+When the `yarn build` is over, move to the folder of the created project, add the package of the sqlite3 DB.
 ```bash
-cd my-backstage && yarn dev
+cd my-backstage 
+yarn add --cwd packages/backend better-sqlite3
 ```
 **Note**: Set this property if a more recent version of node is installed `yarn config set ignore-engines true`
 
+Test it locally by launching this command and next access the UI at this address: `http://localhost:3000/`
+```bash
+yarn dev
+```
+
+### Build and upload the container image
+
 Next, build the image and upload it within your local registry (or kind cluster)
 ```bash
-yarn add --cwd packages/backend better-sqlite3
 yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
