@@ -101,7 +101,6 @@ kubectl apply -f backstage-rbac.yml
 We can now create our `app-config.extra.yaml` config file:
 ```bash
 DOMAIN_NAME="<VM_IP>.sslip.io"
-BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
 cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
