@@ -160,7 +160,6 @@ As we need some additional k8s resources deployed (backstage serviceaccount havi
 kubectl apply -f dice-manifests.yml
 kubectl apply -f backstage-rbac.yml
 ```
-
 Next, the existing ConfigMap must be extended to include the kubernetes config
 
 ```bash
