@@ -143,9 +143,12 @@ backstage:
     registry: "docker.io/library"
     repository: "backstage"
     tag: "dev"
+    pullPolicy: "IfNotPresent"
   extraAppConfig:
     - filename: app-config.extra.yaml
       configMapRef: my-app-config
+postgresql:
+  enabled: false
 EOF
     info "Creating the backstage app-config.extra.yaml file"
     cat <<EOF > $(pwd)/temp/app-config.extra.yaml
