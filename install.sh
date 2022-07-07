@@ -132,8 +132,8 @@ case $action in
       fail "Mandatory flags were note passed: --ip-domain-name"
       exit 1
     fi
-    info "Creating the my-values.yml file containing the backstage helm values at $(pwd)/my-values.yml"
-    cat <<EOF > $(pwd)/my-values.yml
+    info "Creating the my-values.yml file containing the backstage helm values at $(pwd)/temp/my-values.yml"
+    cat <<EOF > $(pwd)/temp/my-values.yml
 ingress:
   enabled: true
   host: backstage.${ip_domain_name}
@@ -148,7 +148,7 @@ backstage:
       configMapRef: my-app-config
 EOF
     info "Creating the backstage app-config.extra.yaml file"
-    cat <<EOF > $(pwd)/app-config.extra.yaml
+    cat <<EOF > $(pwd)/temp/app-config.extra.yaml
 app:
   baseUrl: http://backstage.${ip_domain_name}
   title: Backstage
@@ -181,7 +181,7 @@ EOF
       my-backstage \
       backstage \
       --repo https://vinzscam.github.io/backstage-chart \
-      -f $(pwd)/my-values.yml \
+      -f $(pwd)/temp/my-values.yml \
       --create-namespace \
       -n backstage
 
@@ -210,7 +210,7 @@ subjects:
 EOF
     info "Updating the backstage config app file to configure the kubernetes plugin. Rollout backstage deployment"
     BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
-    cat <<EOF >>  $(pwd)/app-config.extra.yaml
+    cat <<EOF >>  $(pwd)/temp/app-config.extra.yaml
 kubernetes:
   serviceLocatorMethod:
     type: 'multiTenant'
@@ -226,7 +226,7 @@ kubernetes:
 EOF
 
     kubectl create configmap my-app-config -n backstage \
-      --from-file=app-config.extra.yaml=$(pwd)/app-config.extra.yaml \
+      --from-file=app-config.extra.yaml=$(pwd)/temp/app-config.extra.yaml \
       -o yaml \
       --dry-run=client | kubectl apply -n backstage -f -
 

@@ -1,4 +1,5 @@
 /.idea/
+/temp
 commands.txt
 *.yaml
 *.yml

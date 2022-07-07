@@ -68,7 +68,7 @@ We can now create the YAML values file needed by the Helm chart to expose the in
 use the image built
 ```bash
 DOMAIN_NAME="<VM_IP>.sslip.io"
-cat <<EOF > $HOME/code/backstage/my-values.yml
+cat <<EOF > $(pwd)/my-values.yml
 ingress:
   enabled: true
   host: backstage.$DOMAIN_NAME
@@ -89,7 +89,7 @@ helm upgrade --install \
   my-backstage \
   backstage \
   --repo https://vinzscam.github.io/backstage-chart \
-  -f $HOME/code/backstage/my-values.yml \
+  -f $(pwd)/my-values.yml \
   --create-namespace \
   -n backstage
 ```
@@ -97,7 +97,7 @@ helm upgrade --install \
 We can now create our `app-config.extra.yaml` backstage config file:
 ```bash
 DOMAIN_NAME="<VM_IP>.sslip.io"
-cat <<EOF > $HOME/code/backstage/app-config.extra.yaml
+cat <<EOF > $(pwd)/app-config.extra.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
   title: Backstage
@@ -132,7 +132,7 @@ EOF
 Create the `configMap` containing our extra parameters and rollout the backstage app to reload its config
 ```bash
 kubectl create configmap my-app-config -n backstage \
-  --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml
+  --from-file=app-config.extra.yaml=$(pwd)/app-config.extra.yaml
   
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
@@ -157,14 +157,14 @@ and to set up the `Index` and `Backend` packages as described here: https://back
 
 As we need some additional k8s resources deployed (backstage serviceaccount having the RBAC cluster admin role, the dice-roller example, ...) we will then deploy them:
 ```bash
-kubectl apply -f dice-manifests.yml
-kubectl apply -f backstage-rbac.yml
+kubectl apply -f manifests/dice-roller.yml
+kubectl apply -f manifests/backstage-rbac.yml
 ```
 Next, the existing ConfigMap must be extended to include the kubernetes config
 
 ```bash
 BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
-cat <<EOF >> $HOME/code/backstage/app-config.extra.yaml
+cat <<EOF >> $(pwd)/app-config.extra.yaml
 kubernetes:
   serviceLocatorMethod:
     type: 'multiTenant'
@@ -180,7 +180,7 @@ kubernetes:
 EOF
 
 kubectl create configmap my-app-config -n backstage \
-  --from-file=app-config.extra.yaml=$HOME/code/backstage/app-config.extra.yaml \
+  --from-file=app-config.extra.yaml=$(pwd)/app-config.extra.yaml \
   -o yaml \
   --dry-run=client | kubectl apply -n backstage -f -
 
