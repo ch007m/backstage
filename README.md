@@ -22,7 +22,8 @@ Table of Contents
 Here are the steps I followed to install backstage on a k8s cluster according to the backstage documentation
 and feedback that I got from the backstage engineers. 
 
-You can use an already created project available on [github](https://github.com/halkyonio/my-backstage.git) and implementing the following plugins:
+You can use an existing project created using `@backstage/create-app` - version [0.4.28](https://www.npmjs.com/package/@backstage/create-app/v/0.4.28) 
+and available [here](https://github.com/halkyonio/my-backstage.git) and implementing the following plugins:
 - k8s: https://backstage.io/docs/features/kubernetes/overview
 - CCF: https://github.com/cloud-carbon-footprint/ccf-backstage-plugin 
 
