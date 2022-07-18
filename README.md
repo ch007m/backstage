@@ -63,6 +63,7 @@ yarn build
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
+**Note**: To support to build the `TechDocs` using the backend pod, some Dockerfile changes are needed to install the mkdocs package. See this [commit](https://github.com/halkyonio/my-backstage/commit/2d93a33901128ef78b3ef31906c26c59e6e0bc59)
 
 We can now create the YAML values file needed by the Helm chart to expose the ingress route, get the extra config from a configMap and 
 use the image built
