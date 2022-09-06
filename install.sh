@@ -212,7 +212,6 @@ subjects:
     namespace: backstage
 EOF
     info "Updating the backstage config app file to configure the kubernetes plugin. Rollout backstage deployment"
-    BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
     cat <<EOF >>  $(pwd)/temp/app-config.extra.yaml
 kubernetes:
   serviceLocatorMethod:
@@ -225,7 +224,7 @@ kubernetes:
         authProvider: 'serviceAccount'
         skipTLSVerify: true
         skipMetricsLookup: true
-        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
+        serviceAccountToken: /var/run/secrets/kubernetes.io/serviceaccount/token
 EOF
 
     kubectl create configmap my-app-config -n backstage \
