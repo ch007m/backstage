@@ -177,8 +177,22 @@ kubectl apply -f manifests/backstage-rbac.yml
 ```
 Next, the existing `ConfigMap` must be extended to include the kubernetes config
 
+Since kubernetes >=1.24, it is needed to request to the kube controller to create a token for a secret. This is what wa will do hereafter for the backstage service account:
 ```bash
-BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret $(kubectl -n backstage get sa backstage -o=json | jq -r '.secrets[0].name') -o=json | jq -r '.data["token"]' | base64 --decode)
+cat <<EOF | kubectl apply -f - 
+kind: Secret
+apiVersion: v1
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: "backstage"
+  name: backstage
+  namespace: backstage
+type: kubernetes.io/service-account-token
+EOF
+```
+Next, we can grab the token from the secret and pass it to the configMap definition of the kubernetes client:
+```bash
+BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret backstage -o=json | jq -r '.data["token"]' | base64 -d)
 cat <<EOF >> $(pwd)/app-config.extra.yaml
 kubernetes:
   serviceLocatorMethod:
