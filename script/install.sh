@@ -69,6 +69,7 @@ Options:
 
 [Mandatory Flags - Used by the Instance/Delete Action]
   --ip-domain-name: VM IP and domain name (e.g 127.0.0.1.nip.io)
+  --github-token: GitHub Personal Access token
 "
 
 ############################################################################
@@ -88,6 +89,10 @@ while test $# -gt 0; do
      --ip-domain-name)
       shift
       ip_domain_name=$1
+      shift;;
+     --github-token)
+      shift
+      github_token=$1
       shift;;
      -h | --help)
       echo "$HELP_CONTENT"
@@ -128,8 +133,8 @@ fi
 case $action in
   deploy)
     # Validate if Mandatory Flags were supplied
-    if ! [[ ${ip_domain_name} ]]; then
-      fail "Mandatory flags were note passed: --ip-domain-name"
+    if ! [[ ${ip_domain_name} ]] || ! [[ ${github_token} ]] ; then
+      fail "Mandatory flags were not passed: --ip-domain-name and --github-token"
       exit 1
     fi
     info "Creating the my-values.yml file containing the backstage helm values at $(pwd)/temp/my-values.yml"
@@ -168,12 +173,18 @@ backend:
     connection: ':memory:'
   cache:
     store: memory
+
 techdocs:
   builder: 'local' # Alternatives - 'external'
   generator:
     runIn: 'docker' # Alternatives - 'local'
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
 
 catalog:
   import:

@@ -87,9 +87,10 @@ helm upgrade --install \
   -n backstage
 ```
 
-We can now create our `app-config.local.yaml` backstage config file:
+We can now create our `app-config.local.yaml` backstage config file and pass our GitHub token (see [here](https://backstage.io/docs/getting-started/configuration#setting-up-a-github-integration)):
 ```bash
 DOMAIN_NAME="<VM_IP>.nip.io"
+GITHUB_TOKEN="<GITHUB_PAT>"
 cat <<EOF > $(pwd)/my-backstage/app-config.local.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
@@ -107,6 +108,12 @@ backend:
     connection: ':memory:'
   cache:
     store: memory
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+          
 techdocs:
   builder: 'local' # Alternatives - 'external'
   generator:
