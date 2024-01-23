@@ -145,13 +145,13 @@ backstage:
     tag: "dev"
     pullPolicy: "IfNotPresent"
   extraAppConfig:
-    - filename: app-config.extra.yaml
+    - filename: app-config.local.yaml
       configMapRef: my-app-config
 postgresql:
   enabled: false
 EOF
-    info "Creating the backstage app-config.extra.yaml file"
-    cat <<EOF > $(pwd)/temp/app-config.extra.yaml
+    info "Creating the backstage app-config.local.yaml file"
+    cat <<EOF > $(pwd)/temp/app-config.local.yaml
 app:
   baseUrl: http://backstage.${ip_domain_name}
   title: Backstage
@@ -174,10 +174,18 @@ techdocs:
     runIn: 'docker' # Alternatives - 'local'
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+
 catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [ Component, System, API, Resource, Location ]
   locations:
-  - type: url
-    target: https://github.com/mclarke47/dice-roller/blob/master/catalog-info.yaml
+    # Quarkus template, org, entity
+    - type: url
+      target: https://github.com/ch007m/my-backstage-templates/blob/main/all.yaml
+      rules:
+        - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
     info "Deploying backstage using helm"
     helm upgrade --install \
@@ -212,7 +220,7 @@ subjects:
     namespace: backstage
 EOF
     info "Updating the backstage config app file to configure the kubernetes plugin. Rollout backstage deployment"
-    cat <<EOF >>  $(pwd)/temp/app-config.extra.yaml
+    cat <<EOF >>  $(pwd)/temp/app-config.local.yaml
 kubernetes:
   serviceLocatorMethod:
     type: 'multiTenant'
@@ -228,7 +236,7 @@ kubernetes:
 EOF
 
     kubectl create configmap my-app-config -n backstage \
-      --from-file=app-config.extra.yaml=$(pwd)/temp/app-config.extra.yaml \
+      --from-file=app-config.local.yaml=$(pwd)/temp/app-config.local.yaml \
       -o yaml \
       --dry-run=client | kubectl apply -n backstage -f -
 
