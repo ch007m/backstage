@@ -5,48 +5,52 @@ Table of Contents
 
 * [Prerequisites](#prerequisites)
 * [Instructions](#instructions)
-* [New project](#new-project)
+* [All-in-one](#all-in-one)
 * [Plugins](#plugins)
+  * [SqlLite DB](#sqllite-db)
   * [k8s](#k8s)
 * [Cleanup](#cleanup)
 
 ## Prerequisites
 
-- Node (>= 18), npm and npx installed
-- docker and kind available
-- Read: https://john-tucker.medium.com/backstage-and-kubernetes-by-example-3b49725e8acb
+- [Node.js](https://nodejs.org/en) (18 or 20)
+- [nvm](https://github.com/nvm-sh/nvm), npm and [yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable) installed
+- [Docker](https://www.docker.com/products/docker-desktop/), [Helm](https://helm.sh/docs/intro/install/) and [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- Interesting read: https://john-tucker.medium.com/backstage-and-kubernetes-by-example-3b49725e8acb
 
 ## Instructions
 
-Here are the steps to follow to install a customized backstage project on a k8s cluster including the following packages:
+Here are the steps to follow to install a customized backstage project on a k8s cluster using the plugins defined at the section: [plugins](#plugins)
 
-- k8s: https://backstage.io/docs/features/kubernetes/overview
-- ccf: https://github.com/cloud-carbon-footprint/ccf-backstage-plugin 
-
-The project customized is available [here](https://github.com/halkyonio/my-backstage.git).
-It has been created using the backstage client `@backstage/create-app` - version [0.5.10](https://www.npmjs.com/package/@backstage/create-app/v/0.5.10).
-
-**Note**: If you prefer to create "from scratch" a new backstage project, then follow the instructions at the section [New project](#new-project)!
-
-First, git clone the project locally `git clone https://github.com/halkyonio/my-backstage.git cool-demo` in a terminal
-
-Next, move to the project created `cd cool-demo` 
-
-Install the needed packages within the workspace and build the project
-
+Open a terminal and execute the following command within the folder where you want to launch backstage
 ```bash
-yarn install
-yarn build:all
+npx @backstage/create-app
+npx: installed 70 in 12.614s
+? Enter a name for the app [required] my-backstage
+...
+🥇  Successfully created my-backstage
+
+ All set! Now you might want to:
+  Run the app: cd my-backstage && yarn dev
+  Set up the software catalog: https://backstage.io/docs/features/software-catalog/configuration
+  Add authentication: https://backstage.io/docs/auth/
 ```
+
+Test it locally by launching this command and next access the UI at this address: `http://localhost:3000/`
+```bash
+yarn dev
+```
+
+**IMPORTANT**: To configure the different plugins, follow the instructions of the [plugins](#plugins) section before to move to the next step !
 
 Build the image and upload it within your local registry (or kind cluster)
 ```bash
+yarn build:all
 yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
-**Note**: To support to build the `TechDocs` using the backend pod, some Dockerfile changes are needed to install the mkdocs package. See this [commit](https://github.com/halkyonio/my-backstage/commit/2d93a33901128ef78b3ef31906c26c59e6e0bc59)
 
-We can now create the Helm values file to expose the ingress route, get the `local` app config file from a configMap and 
+We can now create the Helm values file to expose the ingress route, use an `app-config` file using a configMap and 
 use the image built
 ```bash
 DOMAIN_NAME="<VM_IP>.nip.io"
@@ -121,7 +125,6 @@ catalog:
         - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
 ```
-**Note**: If you use the [my-backstage](https://github.com/halkyonio/my-backstage.git) GitHub project, then follow the instructions of the [kubernetes plugin](#k8s) ! 
 
 Create the `configMap` containing our parameters and rollout the backstage app to reload its config
 ```bash
@@ -136,35 +139,48 @@ BACKSTAGE_URL=$(kubectl get ingress/my-backstage -n backstage -o json | jq -r '.
 echo "http://${BACKSTAGE_URL}"
 ```
 
-## New project
+## All-in-one
 
-Open a terminal and execute this command within the folder where you want to launch backstage
+You can also install the project oin kind usign the bash script:
 ```bash
-npx @backstage/create-app
-npx: installed 70 in 12.614s
-? Enter a name for the app [required] my-backstage
-...
-🥇  Successfully created my-backstage
+./script/install.sh -h
+Usage: install.sh [OPTIONS]
+Options:
 
- All set! Now you might want to:
-  Run the app: cd my-backstage && yarn dev
-  Set up the software catalog: https://backstage.io/docs/features/software-catalog/configuration
-  Add authentication: https://backstage.io/docs/auth/
-```
-When the `yarn build` is over, move to the folder of the created project, add the package of the sqlite3 DB.
-```bash
-cd my-backstage 
-yarn add --cwd packages/backend better-sqlite3
-```
-**Note**: Set this property if a more recent version of node is installed `yarn config set ignore-engines true`
+[Global Mandatory Flags]
+  --action: What action to take ?
+    "deploy": Installing backstage
+    "remove": Deleting backstage
 
-Test it locally by launching this command and next access the UI at this address: `http://localhost:3000/`
-```bash
-yarn dev
+[Global Optional Flags]
+  -h or -help: Show this help menu
+
+[Mandatory Flags - Used by the Instance/Delete Action]
+  --ip-domain-name: VM IP and domain name (e.g 127.0.0.1.nip.io)
+ 
+Example of command to be executed: 
+./script/install.sh --action deploy --ip-domain-name 127.0.0.1.nip.io
 ```
 
 ## Plugins
 
+### SqlLite DB
+
+To use an in-memory database such as `sqlite3`, add the package of the sqlite3 DB.
+```bash
+cd my-backstage 
+yarn add --cwd packages/backend better-sqlite3
+```
+and next update the `app-config.local.yaml` file to set the property:
+```yaml
+backend:
+...
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  cache:
+    store: memory
+```
 ### k8s
 
 To use the backstage kubernetes plugin (front, backend), it is needed to install 2 packages with the project:
@@ -230,7 +246,7 @@ kubernetes:
         authProvider: 'serviceAccount'
         skipTLSVerify: true
         skipMetricsLookup: true
-        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
+        serviceAccountToken: /var/run/secrets/kubernetes.io/serviceaccount/token
 EOF
 
 You can now create a configmap using the `app-config.local.yaml` file of the `my-backstage` project

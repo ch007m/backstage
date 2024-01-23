@@ -68,7 +68,7 @@ Options:
   -h or -help: Show this help menu
 
 [Mandatory Flags - Used by the Instance/Delete Action]
-  --ip-domain-name: VM IP and domain name (e.g 192.168.1.100.sslp.io)
+  --ip-domain-name: VM IP and domain name (e.g 127.0.0.1.nip.io)
 "
 
 ############################################################################
@@ -150,7 +150,7 @@ backstage:
 postgresql:
   enabled: false
 EOF
-    info "Creating the backstage app-config.local.yaml file"
+    info "Creating the backstage $(pwd)/temp/app-config.local.yaml file"
     cat <<EOF > $(pwd)/temp/app-config.local.yaml
 app:
   baseUrl: http://backstage.${ip_domain_name}
