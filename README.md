@@ -210,7 +210,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: backstage
+    name: my-backstage
     namespace: backstage
 EOF
 ```
@@ -220,25 +220,19 @@ Since kubernetes >=1.24, it is needed to request to the kube controller to creat
 ```bash
 cat <<EOF | kubectl apply -f -
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: backstage
-  namespace: backstage
----
 kind: Secret
 apiVersion: v1
 metadata:
+  name: my-backstage
+  namespace: backstage
   annotations:
     kubernetes.io/service-account.name: "backstage"
-  name: backstage
-  namespace: backstage  
 type: kubernetes.io/service-account-token
 EOF
 ```
 Next, we can grab the token from the secret and pass it to the configMap definition of the kubernetes client:
 ```bash
-BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret backstage -o=json | jq -r '.data["token"]' | base64 -d)
+BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret my-backstage -o go-template='{{.data.token | base64decode}}')
 cat <<EOF >> $(pwd)/my-backstage/app-config.local.yaml
 kubernetes:
   serviceLocatorMethod:
@@ -251,7 +245,7 @@ kubernetes:
         authProvider: 'serviceAccount'
         skipTLSVerify: true
         skipMetricsLookup: true
-        serviceAccountToken: /var/run/secrets/kubernetes.io/serviceaccount/token
+        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
 EOF
 
 You can now create a configmap using the `app-config.local.yaml` file of the `my-backstage` project

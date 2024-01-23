@@ -188,23 +188,17 @@ catalog:
         - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
     info "Deploying backstage using helm"
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add backstage https://backstage.github.io/charts
     helm upgrade --install \
       my-backstage \
-      backstage \
-      --repo https://vinzscam.github.io/backstage-chart \
-      -f $(pwd)/temp/my-values.yml \
+      backstage/backstage \
+      -f $(pwd)/my-values.yml \
       --create-namespace \
       -n backstage
 
     info "Creating the backstage cluster admin role for the service account of backstage"
     cat <<EOF | kubectl apply -f -
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: backstage
-  namespace: backstage
-automountServiceAccountToken: false
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -216,10 +210,22 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: backstage
+    name: my-backstage
     namespace: backstage
 EOF
-    info "Updating the backstage config app file to configure the kubernetes plugin. Rollout backstage deployment"
+    info "Creating a secret containing a long live token: https://backstage.io/docs/features/kubernetes/configuration"
+    kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-backstage
+  namespace: backstage
+  annotations:
+    kubernetes.io/service-account.name: my-backstage
+type: kubernetes.io/service-account-token
+EOF
+
+    BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret my-backstage -o go-template='{{.data.token | base64decode}}')
     cat <<EOF >>  $(pwd)/temp/app-config.local.yaml
 kubernetes:
   serviceLocatorMethod:
@@ -232,9 +238,10 @@ kubernetes:
         authProvider: 'serviceAccount'
         skipTLSVerify: true
         skipMetricsLookup: true
-        serviceAccountToken: /var/run/secrets/kubernetes.io/serviceaccount/token
+        serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
 EOF
 
+    info "Updating the backstage config app file to configure the kubernetes plugin. Rollout backstage deployment"
     kubectl create configmap my-app-config -n backstage \
       --from-file=app-config.local.yaml=$(pwd)/temp/app-config.local.yaml \
       -o yaml \
@@ -247,7 +254,7 @@ EOF
   remove)
     helm uninstall my-backstage -n backstage
     kubectl delete ClusterRoleBinding/sa-admin
-    kubectl delete sa/backstage -n backstage
+    kubectl delete sa/my-backstage -n backstage
     info "Removed.";;
   *)
    fail "Unknown action passed: $action. Please use --help."
