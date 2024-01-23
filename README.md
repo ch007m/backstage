@@ -50,8 +50,8 @@ yarn build-image -t backstage:dev
 kind load docker-image backstage:dev
 ```
 
-We can now create the Helm values file to expose the ingress route, use an `app-config` file using a configMap and 
-use the image built
+We can now create the Helm values file to expose the ingress route, specify the `app-config` file to be loaded as configMap and 
+the image name
 ```bash
 DOMAIN_NAME="<VM_IP>.nip.io"
 cat <<EOF > $(pwd)/my-values.yml
@@ -126,7 +126,7 @@ catalog:
 EOF
 ```
 
-Create the `configMap` containing our parameters and rollout the backstage app to reload its config
+Create the `configMap` containing the parameters and rollout the backstage app to reload its config
 ```bash
 kubectl create configmap my-app-config -n backstage \
   --from-file=app-config.local.yaml=$(pwd)/app-config.local.yaml
