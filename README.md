@@ -9,6 +9,8 @@ Table of Contents
 * [Plugins](#plugins)
   * [SqlLite DB](#sqllite-db)
   * [k8s](#k8s)
+  * [Carbon Cloud Footprint](#carbon-cloud-footprint)
+
 * [Cleanup](#cleanup)
 
 ## Prerequisites
@@ -120,7 +122,7 @@ catalog:
   locations:
     # Quarkus template, org, entity
     - type: url
-      target: https://github.com/ch007m/my-backstage-templates/blob/main/all.yaml
+      target: https://github.com/ch007m/my-backstage-templates/blob/main/kubernetes/all.yaml
       rules:
         - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
@@ -138,6 +140,9 @@ Grab the URL of backstage and access it from your browser
 BACKSTAGE_URL=$(kubectl get ingress/my-backstage -n backstage -o json | jq -r '.spec.rules[0].host')
 echo "http://${BACKSTAGE_URL}"
 ```
+
+To verify if the kubernetes plugin can access resources deployed on the cluster and used as annotation `backstage.io/kubernetes-id: my-quarkus`, then deploy the following manifest:
+`kubectl apply -f https://raw.githubusercontent.com/ch007m/my-backstage-templates/main/kubernetes/manifest/deploy.yaml`
 
 ## All-in-one
 
@@ -261,7 +266,13 @@ kubectl rollout restart deployment/my-backstage -n backstage
 Open now [backstage](https://backstage.127.0.0.1.nip.io/), select the [component](https://backstage.127.0.0.1.nip.io/catalog/default/component/my-quarkus) `my-quarkus` and click on the `kubernetes` tab, and you will see
 
 ![](k8s-plugin.png)
+### Carbon Cloud Footprint
 
+See: https://github.com/cloud-carbon-footprint/ccf-backstage-plugin
+
+TODO
+
+Plugins
 ## Cleanup
 
 To uninstall the chart

@@ -183,7 +183,7 @@ catalog:
   locations:
     # Quarkus template, org, entity
     - type: url
-      target: https://github.com/ch007m/my-backstage-templates/blob/main/all.yaml
+      target: https://github.com/ch007m/my-backstage-templates/blob/main/kubernetes/all.yaml
       rules:
         - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
