@@ -9,12 +9,12 @@ Table of Contents
 * [Plugins](#plugins)
   * [k8s](#k8s)
 * [Cleanup](#cleanup)
-* [Rancher desktop](#rancher-desktop)
 
 ## Prerequisites
 
-- Node (>= 16), npm and npx installed
+- Node (>= 18), npm and npx installed
 - docker and kind available
+- Read: https://john-tucker.medium.com/backstage-and-kubernetes-by-example-3b49725e8acb
 
 ## Instructions
 
@@ -24,7 +24,7 @@ Here are the steps to follow to install a customized backstage project on a k8s 
 - ccf: https://github.com/cloud-carbon-footprint/ccf-backstage-plugin 
 
 The project customized is available [here](https://github.com/halkyonio/my-backstage.git).
-It has been created using the backstage client `@backstage/create-app` - version [0.4.28](https://www.npmjs.com/package/@backstage/create-app/v/0.4.28).
+It has been created using the backstage client `@backstage/create-app` - version [0.5.10](https://www.npmjs.com/package/@backstage/create-app/v/0.5.10).
 
 **Note**: If you prefer to create "from scratch" a new backstage project, then follow the instructions at the section [New project](#new-project)!
 
@@ -36,7 +36,7 @@ Install the needed packages within the workspace and build the project
 
 ```bash
 yarn install
-yarn build
+yarn build:all
 ```
 
 Build the image and upload it within your local registry (or kind cluster)
@@ -46,7 +46,7 @@ kind load docker-image backstage:dev
 ```
 **Note**: To support to build the `TechDocs` using the backend pod, some Dockerfile changes are needed to install the mkdocs package. See this [commit](https://github.com/halkyonio/my-backstage/commit/2d93a33901128ef78b3ef31906c26c59e6e0bc59)
 
-We can now create the Helm values file to expose the ingress route, get the extra config from a configMap and 
+We can now create the Helm values file to expose the ingress route, get the `local` app config file from a configMap and 
 use the image built
 ```bash
 DOMAIN_NAME="<VM_IP>.nip.io"
@@ -64,7 +64,7 @@ backstage:
     repository: "backstage"
     tag: "dev"
   extraAppConfig:
-    - filename: app-config.extra.yaml
+    - filename: app-config.local.yaml
       configMapRef: my-app-config         
 EOF
 ```
@@ -81,10 +81,10 @@ helm upgrade --install \
   -n backstage
 ```
 
-We can now create our `app-config.extra.yaml` backstage config file:
+We can now create our `app-config.local.yaml` backstage config file:
 ```bash
 DOMAIN_NAME="<VM_IP>.nip.io"
-cat <<EOF > $(pwd)/app-config.extra.yaml
+cat <<EOF > $(pwd)/my-backstage/app-config.local.yaml
 app:
   baseUrl: http://backstage.$DOMAIN_NAME
   title: Backstage
@@ -107,19 +107,26 @@ techdocs:
     runIn: 'local' # Alternatives - 'local'
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+    
 catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [ Component, System, API, Resource, Location ]
   locations:
-  - type: url
-    target: https://github.com/mclarke47/dice-roller/blob/master/catalog-info.yaml    
+    # Quarkus template, org, entity
+    - type: url
+      target: https://github.com/ch007m/my-backstage-templates/blob/main/all.yaml
+      rules:
+        - allow: [Template,Location,Component,System,Resource,User,Group]
 EOF
 ```
+**Note**: If you use the [my-backstage](https://github.com/halkyonio/my-backstage.git) GitHub project, then follow the instructions of the [kubernetes plugin](#k8s) ! 
 
-**Note**: If you use the [my-backstage](https://github.com/halkyonio/my-backstage.git) github project, then follow the instructions of the [kubernetes plugin](#k8s)) ! 
-
-Create the `configMap` containing our extra parameters and rollout the backstage app to reload its config
+Create the `configMap` containing our parameters and rollout the backstage app to reload its config
 ```bash
 kubectl create configmap my-app-config -n backstage \
-  --from-file=app-config.extra.yaml=$(pwd)/app-config.extra.yaml
+  --from-file=app-config.local.yaml=$(pwd)/app-config.local.yaml
   
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
@@ -160,40 +167,58 @@ yarn dev
 
 ### k8s
 
-To use the backstage kubernetes plugin, it is needed to install 2 packages with the project:
+To use the backstage kubernetes plugin (front, backend), it is needed to install 2 packages with the project:
 ```bash
 yarn add --cwd packages/app @backstage/plugin-kubernetes
 yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
 ```
 
-**Note**: If you create a new project, then it is needed to set up the `Index` and `Backend` packages 
+**Note**: If you create a new backstage project, then it is needed to update the files: `packages/app/src/components/catalog/EntityPage.tsx` and `packages/backend/src/plugins/kubernetes.ts` 
 as described hereafter: https://backstage.io/docs/features/kubernetes/installation !
 
-As we need some additional k8s resources deployed (backstage serviceaccount having the RBAC cluster admin role, the dice-roller example, ...) 
-we will then deploy them:
+To allow backstage to access the k8s cluster resources, it is then needed to create a RBAC using this command:
 ```bash
-kubectl apply -f manifests/dice-roller.yml
-kubectl apply -f manifests/backstage-rbac.yml
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sa-admin
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: backstage
+    namespace: backstage
+EOF
 ```
 Next, the existing `ConfigMap` must be extended to include the kubernetes config
 
 Since kubernetes >=1.24, it is needed to request to the kube controller to create a token for a secret. This is what wa will do hereafter for the backstage service account:
 ```bash
-cat <<EOF | kubectl apply -f - 
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backstage
+  namespace: backstage
+---
 kind: Secret
 apiVersion: v1
 metadata:
   annotations:
     kubernetes.io/service-account.name: "backstage"
   name: backstage
-  namespace: backstage
+  namespace: backstage  
 type: kubernetes.io/service-account-token
 EOF
 ```
 Next, we can grab the token from the secret and pass it to the configMap definition of the kubernetes client:
 ```bash
 BACKSTAGE_SA_TOKEN=$(kubectl -n backstage get secret backstage -o=json | jq -r '.data["token"]' | base64 -d)
-cat <<EOF >> $(pwd)/app-config.extra.yaml
+cat <<EOF >> $(pwd)/my-backstage/app-config.local.yaml
 kubernetes:
   serviceLocatorMethod:
     type: 'multiTenant'
@@ -208,14 +233,16 @@ kubernetes:
         serviceAccountToken: ${BACKSTAGE_SA_TOKEN}
 EOF
 
+You can now create a configmap using the `app-config.local.yaml` file of the `my-backstage` project
+```bash
 kubectl create configmap my-app-config -n backstage \
-  --from-file=app-config.extra.yaml=$(pwd)/app-config.extra.yaml \
+  --from-file=app-config.local.yaml=$(pwd)/my-backstage/app-config.local.yaml \
   -o yaml \
   --dry-run=client | kubectl apply -n backstage -f -
 
 kubectl rollout restart deployment/my-backstage -n backstage
 ```
-Open the url of the `dice-roller` service (e.g. https://backstage.VM_IP.nip.io/catalog/default/component/dice-roller/kubernetes) and click on the `kubernetes` tab, and you will see
+Open now [backstage](https://backstage.127.0.0.1.nip.io/), select the [component](https://backstage.127.0.0.1.nip.io/catalog/default/component/my-quarkus) `my-quarkus` and click on the `kubernetes` tab, and you will see
 
 ![](k8s-plugin.png)
 
@@ -225,21 +252,3 @@ To uninstall the chart
 ```bash
 helm uninstall my-backstage -n backstage
 ```
-**Note**: If the resources of the chart must be changed locally, then pull/untar the project:
-```bash
-helm pull https://github.com/vinzscam/backstage-chart/releases/download/backstage-0.2.0/backstage-0.2.0.tgz --untar --untardir ./
-```
-
-## Rancher desktop
-
-If you plan to use `rancher-desktop`, then I recommend to disable `traefix` and to install the `ingress nginx` controller
-```shell
-helm upgrade --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress --create-namespace \
-  --set controller.service.type=NodePort \
-  --set controller.hostPort.enabled=true
-```
-
-The command to be used to build the backstage image is `nerdctl build --namespace k8s.io -f packages/backend/Dockerfile -t backstage:dev .` 
-instead of `yarn build-image -t backstage:dev`
